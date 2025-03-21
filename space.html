@@ -1,0 +1,395 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+
+<head>
+    <meta charset="UTF-8">
+    <title>space</title>
+    <script type="text/javascript" src="simpleGame.js"></script>
+    <style>
+        /* ✅ ปรับขนาดให้เต็มจอ */
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+        }
+
+        /* ✅ คอนเทนเนอร์ของเกม */
+        #game-container {
+            position: relative;
+            width: 1280px;
+            height: 720px;
+            overflow: hidden;
+        }
+
+        /* ✅ ให้ Canvas อยู่บนพื้นหลัง */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+
+<body onload="init()">
+
+    <!-- ✅ คอนเทนเนอร์ของเกม -->
+    <div id="game-container"></div>
+
+    <script type="text/javascript">
+        var ship;
+        var game;
+        var enemies = [];
+        var bullets = [];
+        var enemyBullets = []; // เก็บกระสุนของศัตรู
+        var frameCount = 0;
+        let dragonFrames = [
+            "enemy/dragon/frame_1.png",
+            "enemy/dragon/frame_2.png",
+            "enemy/dragon/frame_3.png",
+            "enemy/dragon/frame_4.png"
+        ];
+
+        function Spaceship() {
+            let flyImages = ["player/Fly (1).png", "player/Fly (2).png"];
+            let shootImages = [
+                "player/Shoot (1).png", "player/Shoot (2).png",
+                "player/Shoot (3).png", "player/Shoot (4).png",
+                "player/Shoot (5).png"
+            ];
+            let currentFrame = 0;
+            let isShooting = false;
+
+            tShip = new Sprite(game, flyImages[currentFrame], 80, 55);
+            tShip.setSpeed(0);
+            tShip.setImgAngle(90);
+            tShip.setPosition(game.width / 6, game.height / 2);
+
+            tShip.checkKeys = function () {
+                if (keysDown[65]) this.setX(this.x - 6);
+                if (keysDown[68]) this.setX(this.x + 6);
+                if (keysDown[87]) this.setY(this.y - 6);
+                if (keysDown[83]) this.setY(this.y + 6);
+
+                // ยิงกระสุน
+                if (keysDown[32]) {
+                    isShooting = true;
+                    if (frameCount % 5 === 0) {
+                        shootBullet();
+                    }
+                } else {
+                    isShooting = false;
+                }
+
+                this.setX(Math.max(50, Math.min(this.x, game.width - 50)));
+                this.setY(Math.max(50, Math.min(this.y, game.height - 50)));
+            };
+
+            tShip.animate = function () {
+                if (isShooting) {
+                    let frameIndex = Math.floor(frameCount / 5) % shootImages.length;
+                    this.image.src = (shootImages[frameIndex]);
+                } else {
+                    if (frameCount % 10 === 0) {
+                        currentFrame = (currentFrame + 1) % flyImages.length;
+                        this.image.src = (flyImages[currentFrame]);
+                    }
+                }
+            };
+
+            return tShip;
+        }
+
+        class Dragon {
+            constructor(x, y, speed) {
+                this.sprite = new Sprite(game, "enemy/flying_dragon-red.png", 191, 161);
+                this.sprite.setSpeed(0);
+                this.sprite.setPosition(x, y);
+                this.speed = 2;
+                this.frameIndex = 0; // เก็บตำแหน่งเฟรมปัจจุบัน
+                this.framesX = 3; // จำนวนเฟรมในแกน X
+                this.framesY = 4; // จำนวนเฟรมในแกน Y
+                this.frameWidth = 191; // กำหนดขนาดแต่ละเฟรม
+                this.frameHeight = 161;
+                this.totalFrames = this.framesX * this.framesY; // จำนวนเฟรมทั้งหมด (12)
+                this.direction = 0; // กำหนดทิศทาง (0 = ขวา, 1 = เฉียง, 2 = ซ้าย, 3 = บินขึ้น)
+            }
+
+            update() {
+                this.move();
+                this.animate();
+            }
+
+            move() {
+                let dx = ship.x - this.sprite.x;
+                let dy = ship.y - this.sprite.y;
+                let angle = Math.atan2(dy, dx);
+
+                this.sprite.setX(this.sprite.x + Math.cos(angle) * this.speed);
+                this.sprite.setY(this.sprite.y + Math.sin(angle) * this.speed);
+
+                // ✅ ตรวจสอบทิศทางเพื่อเลือกแถวที่เหมาะสมจาก spritesheet
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    // บินแนวนอน
+                    this.direction = dx > 0 ? 1 : 3; // ขวา = 0, ซ้าย = 2
+                } else {
+                    // บินแนวตั้งหรือเฉียง
+                    this.direction = dy < 0 ? 0 : 2; // ขึ้น = 3, เฉียงลง = 1
+                }
+            }
+
+            animate() {
+                if (frameCount % 5 === 0) { // เปลี่ยนเฟรมทุก 5 เฟรม
+                    this.frameIndex = (this.frameIndex + 1) % this.framesX; // หมุนในแต่ละแถว
+                }
+
+                // คำนวณตำแหน่งเฟรมจาก spritesheet
+                let frameX = this.frameIndex * this.frameWidth;
+                let frameY = this.direction * this.frameHeight; // แถวที่กำหนดโดยทิศทาง
+
+                // ตัดภาพจาก spritesheet และวาดลง canvas
+                game.context.drawImage(
+                    this.sprite.image,
+                    frameX, frameY, // ตำแหน่ง x, y ใน spritesheet
+                    this.frameWidth, this.frameHeight, // ขนาดเฟรมที่ต้องตัด
+                    this.sprite.x - this.frameWidth / 2, this.sprite.y - this.frameHeight / 2, // ตำแหน่งมังกรในเกม
+                    this.frameWidth, this.frameHeight
+                );
+            }
+        }
+
+        class Bullet {
+            constructor(x, y) {
+                this.sprite = new Sprite(game, "weapon/machine-gun-bullet.png", 15, 30);
+                this.sprite.setSpeed(15);
+                this.sprite.setPosition(x, y);
+                this.sprite.setImgAngle(180);
+                this.sprite.setMoveAngle(90);
+            }
+
+            update() {
+                this.sprite.update();
+
+                // ถ้ากระสุนออกจากขอบขวาสุดของหน้าจอ ให้ลบทิ้ง
+                if (this.sprite.x > game.width + this.sprite.width) {
+                    let index = bullets.indexOf(this);
+                    if (index > -1) {
+                        bullets.splice(index, 1);
+                    }
+                }
+            }
+        }
+
+        // 🚀 ยิงกระสุน
+        function shootBullet() {
+            let bullet = new Bullet(ship.x + 20, ship.y + 15);
+            bullets.push(bullet);
+        }
+
+        // 🚀 อัปเดตการเคลื่อนที่ของกระสุน
+        function updateBullets() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].update();
+
+                // ✅ ถ้ากระสุนใกล้ถึงขอบขวาของจอ (เช่น ห่าง 30px) ให้ลบทิ้งก่อนถึงขอบ
+                if (bullets[i].sprite.x > game.width - 30) {
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        class EnemyBullet {
+            constructor(x, y) {
+                this.sprite = new Sprite(game, "weapon/Shot5/shot5_asset.png", 120, 80);
+                this.sprite.setSpeed(8);
+                this.sprite.setPosition(x, y);
+                this.sprite.setImgAngle(270);
+                this.sprite.setMoveAngle(270); // ยิงลงล่าง
+            }
+
+            update() {
+                this.sprite.update();
+
+                // ถ้ากระสุนออกจากหน้าจอให้ลบทิ้ง
+                if (this.sprite.x > game.width - this.sprite.width) {
+                    let index = enemyBullets.indexOf(this);
+                    if (index > -1) {
+                        enemyBullets.splice(index, 1);
+                    }
+                }
+            }
+        }
+
+        // ✅ ปรับเงื่อนไขให้ยิงเมื่อ sprite ศัตรูอยู่ในแนวเดียวกันกับผู้เล่น (พิจารณาขอบของ sprite)
+        function isAlignedVertically(enemy) {
+            let enemyTop = enemy.y - enemy.height / 2;
+            let enemyBottom = enemy.y + enemy.height / 2;
+            let playerTop = ship.y - ship.height / 2;
+            let playerBottom = ship.y + ship.height / 2;
+
+            return (
+                (playerTop >= enemyTop && playerTop <= enemyBottom) || // ขอบบนของผู้เล่นอยู่ในขอบศัตรู
+                (playerBottom >= enemyTop && playerBottom <= enemyBottom) || // ขอบล่างของผู้เล่นอยู่ในขอบศัตรู
+                (enemyTop >= playerTop && enemyBottom <= playerBottom) // ศัตรูอยู่ในขอบผู้เล่น
+            );
+        }
+
+        // ✅ ยิงกระสุนศัตรูแบบเว้นช่วงเวลาสุ่ม
+        function enemyShootBullet(enemy) {
+            if (isAlignedVertically(enemy) && frameCount - enemy.lastShotFrame > enemy.shootDelay) {
+                let bullet = new EnemyBullet(enemy.x, enemy.y);
+                enemyBullets.push(bullet);
+                enemy.lastShotFrame = frameCount; // บันทึก frame ล่าสุดที่ยิงกระสุน
+            }
+        }
+
+        // ✅ อัปเดตการเคลื่อนที่ของกระสุนศัตรู
+        function updateEnemyBullets() {
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                enemyBullets[i].update();
+            }
+        }
+
+        function Enemy(x, y, type, speed) {
+            // let spriteMap = {
+            //     1: "enemy/enemy-ship.png",
+            //     2: "enemy/enemy-spaceship.png",
+            //     3: "enemy/flying_dragon-red.png" // ใช้ภาพมังกรที่อัปโหลด
+            // };
+
+            // let currentFrame = 0;
+
+            let e;
+            if (type === 3) {
+                e = new Dragon(x, y, speed); // ถ้าเป็นศัตรูที่ 3 ใช้มังกร
+            } else {
+                let spriteMap = {
+                    1: "enemy/enemy-ship.png",
+                    2: "enemy/enemy-spaceship.png"
+                };
+                e = new Sprite(game, spriteMap[type], 50, 50);
+                e.setSpeed(0);
+                e.setPosition(x, y);
+                e.setImgAngle(0);
+                e.type = type;
+                e.speed = speed;
+                e.shootDelay = Math.floor(Math.random() * 100) + 80; // ยิงทุก ๆ 80-180 เฟรม
+                e.lastShotFrame = 0; // บันทึกเฟรมที่ยิงล่าสุด
+            }
+
+            e.updateBehavior = function () {
+                if (this.type === 1) {
+                    this.setX(this.x - 2);
+                } else if (this.type === 2) {
+                    // ✅ ให้ศัตรูประเภท 2 ยิงกระสุนได้ต่อเนื่อง แต่มี delay
+                    enemyShootBullet(this);
+                } else if (this.type === 3) {
+                    // ทำให้มังกรบินเข้าใกล้ผู้เล่น
+                    let dx = ship.x - this.x;
+                    let dy = ship.y - this.y;
+                    let angle = Math.atan2(dy, dx);
+                    this.setX(this.x + Math.cos(angle) * 2);
+                    this.setY(this.y + Math.sin(angle) * 2);
+
+                    // อัปเดตอนิเมชันของมังกร
+                    if (frameCount % 10 === 0) {
+                        currentFrame = (currentFrame + 1) % frameImages.length;
+                        this.image.src = frameImages[currentFrame];
+                    }
+                }
+
+                if (this.x < -50) {
+                    let index = enemies.indexOf(this);
+                    if (index > -1) {
+                        enemies.splice(index, 1);
+                    }
+                }
+            };
+
+            return e;
+        }
+
+
+        function spawnEnemies(numEnemies) {
+            let startX = ship.x + 300;
+            let minY = 50;
+            let maxY = game.height - 50;
+            let xSpacing = 250;
+            let ySpacing = 120;
+            let maxRows = 4;
+
+            for (let i = 0; i < numEnemies; i++) {
+                let col = Math.floor(i / maxRows);
+                let row = i % maxRows;
+
+                let x = startX + col * xSpacing + (Math.random() * 50 - 25);
+                let y = minY + row * ySpacing + (Math.random() * 50 - 25);
+
+                let enemyType = Math.floor(Math.random() * 3) + 1;
+                let enemySpeed = enemyType === 1 ? Math.random() * 4 + 1 : enemyType === 2 ? 0 : Math.random() * 5 + 3;
+
+                let enemy = new Enemy(x, y, enemyType, enemySpeed);
+                enemies.push(enemy);
+            }
+        }
+
+        function init() {
+            game = new Scene();
+            game.setSize(1280, 720);
+
+            // ✅ เพิ่ม Background Video ใน Scene
+            game.backgroundVideo = document.createElement("video");
+            game.backgroundVideo.src = "background-video.mp4";
+            game.backgroundVideo.autoplay = true;
+            game.backgroundVideo.loop = true;
+            game.backgroundVideo.muted = true;
+            game.backgroundVideo.play();
+
+            // ✅ ทำให้ Canvas อยู่ใน #game-container
+            document.getElementById("game-container").appendChild(game.canvas);
+
+            // 🚀 สร้างยานอวกาศ
+            ship = new Spaceship();
+
+            // 🛸 สร้างศัตรู
+            spawnEnemies(15);
+
+            game.start();
+        }
+
+        function update() {
+            game.clear();
+
+            // ✅ วาดวิดีโอพื้นหลัง
+            game.context.drawImage(game.backgroundVideo, 0, 0, game.width, game.height);
+
+            ship.checkKeys();
+            ship.animate();
+            ship.update();
+
+            // ✅ อัปเดตการเคลื่อนที่ของกระสุน
+            updateBullets();
+
+            // ✅ อัปเดตกระสุนของศัตรู
+            updateEnemyBullets();
+
+            // อัปเดตศัตรูทุกตัว
+            for (let enemy of enemies) {
+                enemy.updateBehavior();
+                enemy.update();
+            }
+
+            frameCount++;
+        }
+
+    </script>
+
+</body>
+
+</html>
