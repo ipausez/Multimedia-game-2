@@ -339,6 +339,63 @@
             }
         }
 
+        var playerHealth = 3; // ผู้เล่นมีหัวใจ 3 ดวง
+        var invincible = false; // สถานะป้องกัน
+
+        function drawHealth() {
+            game.context.fillStyle = "white";
+            game.context.font = "20px Arial";
+            game.context.fillText("Health: " + playerHealth, 20, 30);
+        }
+
+        function blinkEffect() {
+            if (invincible) {
+                ship.image.src = (frameCount % 10 < 5) 
+                    ? "player/Fly (2).png" 
+                    : "player/Fly (1).png";
+            } else {
+                ship.image.src = "player/Fly (1).png"; // กลับเป็นปกติ
+            }
+        }
+
+        function checkCollisions() {
+    if (invincible) return; // ❌ ห้ามลดหัวใจถ้าอยู่ในโหมดป้องกัน
+
+    for (let enemy of enemies) {
+        if (ship.collidesWith(enemy)) {
+            playerHealth--; // 🔥 ลดหัวใจ
+            invincible = true; // 🚀 เปิดโหมดป้องกัน
+
+            setTimeout(() => {
+                invincible = false; // ⏳ ปิดโหมดป้องกันหลังจาก 1 วินาที
+            }, 1000);
+
+            // 🔥 ลบศัตรูออกจากเกม
+            let index = enemies.indexOf(enemy);
+            if (index > -1) {
+                enemies.splice(index, 1);
+            }
+
+            // 🎮 เอฟเฟกต์กระพริบ (ใช้ hide/show แทน opacity)
+            let blinkCount = 5; // กระพริบ 5 ครั้ง
+            let blinkInterval = setInterval(() => {
+                ship.image.src = (ship.image.src.includes("Fly (1)")) 
+                    ? "player/Fly (2).png" 
+                    : "player/Fly (1).png";
+                blinkCount--;
+                if (blinkCount <= 0) clearInterval(blinkInterval);
+            }, 200);
+
+            // 🔥 ตรวจสอบว่าหัวใจหมดหรือไม่
+            if (playerHealth <= 0) {
+                alert("Game Over!");
+                location.reload();
+            }
+            break;
+        }
+    }
+}
+
         function init() {
             game = new Scene();
             game.setSize(1280, 720);
@@ -384,6 +441,9 @@
                 enemy.updateBehavior();
                 enemy.update();
             }
+            checkCollisions(); // ✅ เรียกใช้ตรวจจับการชนกัน
+            drawHealth();
+            blinkEffect(); // เอฟเฟกต์กระพริบขณะไร้การชน
 
             frameCount++;
         }
