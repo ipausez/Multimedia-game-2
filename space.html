@@ -89,7 +89,7 @@
         // เพิ่มตัวแปรสำหรับเก็บ medkit
         var medkits = [];
 
-        var deathSound = new Audio("sound/death-sound.mp3");
+        //var deathSound = new Audio("sound/injured-sound.mp3");
 
         // ตรวจสอบเมื่อมีการคลิกปุ่ม
         document.getElementById('start-btn').addEventListener('click', function () {
@@ -247,6 +247,10 @@
         function shootBullet() {
             let bullet = new Bullet(ship.x + 20, ship.y + 15);
             bullets.push(bullet);
+            // เล่นเสียงยิงกระสุนทันทีเมื่อยิง
+            var shootSound = new Audio("sound/shoot-sound.mp3");
+            shootSound.currentTime = 0;
+            shootSound.play();
         }
 
         // อัปเดตการเคลื่อนที่ของกระสุนของผู้เล่น
@@ -429,19 +433,29 @@
             return Math.sqrt(dx * dx + dy * dy);
         }
 
+        function playDeathSound() {
+        // สร้าง Audio instance ใหม่ทุกครั้ง
+            var sound = new Audio("sound/injured-sound.mp3");
+            sound.currentTime = 0;
+            sound.play();
+        }
+
+        function playGameOverSound() {
+            var gameOverSound = new Audio("sound/gameOver-sound.mp3");
+            gameOverSound.currentTime = 0;
+            gameOverSound.play();
+        }
+
         // ฟังก์ชันตรวจจับการชนและการสร้าง damage
         function checkCollisions() {
-    if (invincible) return; // ไม่ตรวจจับการชนหากผู้เล่นอยู่ในสถานะ invincible
+    if (invincible) return;
 
-    // ตรวจสอบการชนระหว่างผู้เล่นและศัตรู
     for (let enemy of enemies) {
-        let distance = distanceBetween(ship, enemy); // คำนวณระยะห่างระหว่างผู้เล่นและศัตรู
-
-        if (distance < 50) { // ถ้าชนกัน
+        let distance = distanceBetween(ship, enemy);
+        if (distance < 50) {
             console.log('Collision detected!');
-            playerHealth--; // ลดเลือดผู้เล่น
-            deathSound.currentTime = 0; // รีเซ็ตเสียง
-            deathSound.play(); // เล่นเสียงทันที
+            playerHealth--;
+            playDeathSound(); // เล่นเสียงทันทีเมื่อเกิดการชน
             invincible = true;
             setTimeout(() => { invincible = false; }, 1000);
 
@@ -450,7 +464,7 @@
                 enemies.splice(index, 1);
             }
 
-            // ตัวอย่างการกระพริบของผู้เล่น
+            // ตัวอย่างกระพริบของผู้เล่น
             let blinkCount = 5;
             let blinkInterval = setInterval(() => {
                 ship.image.src = (ship.image.src.includes("Fly (1)"))
@@ -461,9 +475,12 @@
             }, 200);
 
             if (playerHealth <= 0) {
+            playGameOverSound();
+            setTimeout(() => {
                 alert("Game Over!");
                 location.reload();
-            }
+            }, 500);
+}
             break;
         }
     }
@@ -529,23 +546,22 @@
         function checkEnemyBulletCollisions() {
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
         let bullet = enemyBullets[i];
-
-        // คำนวณระยะห่างระหว่างกระสุนศัตรูกับผู้เล่น
         let distance = distanceBetween(bullet.sprite, ship);
-
         if (distance < 50) {
-            playerHealth--; // ลดเลือดผู้เล่น
-            deathSound.play(); // เล่นเสียงเมื่อเลือดลดลง
+            playerHealth--;
+            playDeathSound(); // เล่นเสียงทันทีเมื่อโดนกระสุนศัตรู
             invincible = true;
             setTimeout(() => { invincible = false; }, 1000);
 
             console.log('Player hit by enemy bullet!');
-
             enemyBullets.splice(i, 1);
 
             if (playerHealth <= 0) {
+            playGameOverSound();
+            setTimeout(() => {
                 alert("Game Over!");
                 location.reload();
+            }, 500);
             }
         }
     }
