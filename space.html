@@ -369,7 +369,8 @@
                 let col = Math.floor(i / maxRows);
                 let row = i % maxRows;
 
-                let x = startX + col * xSpacing + (Math.random() * 50 - 25);
+                // ปรับตำแหน่ง x ให้เกิดในพื้นที่ 40% ขึ้นไปของหน้าจอ
+                let x = Math.random() * (game.width * 0.6) + (game.width * 0.4); // ทำให้เกิดใน 60% ส่วนหน้าจอที่เหลือ
                 let y = minY + row * ySpacing + (Math.random() * 50 - 25);
 
                 let enemyType = Math.floor(Math.random() * 3) + 1;
@@ -476,7 +477,7 @@
                     let distance = distanceBetween(bullet.sprite, enemySprite);
 
                     // ถ้าระยะห่างน้อยกว่าค่าที่กำหนด (เช่น 50px) ก็ถือว่าเกิดการชน
-                    if (distance <= 50) {
+                    if (distance <= 30) {
                         // ลบศัตรูและกระสุน
                         enemies.splice(j, 1);
                         bullets.splice(i, 1);
