@@ -121,13 +121,13 @@
                 this.sprite.setSpeed(0);
                 this.sprite.setPosition(x, y);
                 this.speed = 2;
-                this.frameIndex = 0; // เก็บตำแหน่งเฟรมปัจจุบัน
-                this.framesX = 3; // จำนวนเฟรมในแกน X
-                this.framesY = 4; // จำนวนเฟรมในแกน Y
-                this.frameWidth = 191; // กำหนดขนาดแต่ละเฟรม
+                this.frameIndex = 0;
+                this.framesX = 3;
+                this.framesY = 4;
+                this.frameWidth = 191;
                 this.frameHeight = 161;
-                this.totalFrames = this.framesX * this.framesY; // จำนวนเฟรมทั้งหมด (12)
-                this.direction = 0; // กำหนดทิศทาง (0 = ขวา, 1 = เฉียง, 2 = ซ้าย, 3 = บินขึ้น)
+                this.totalFrames = this.framesX * this.framesY;
+                this.direction = 0;
             }
 
             update() {
@@ -143,7 +143,6 @@
                 this.sprite.setX(this.sprite.x + Math.cos(angle) * this.speed);
                 this.sprite.setY(this.sprite.y + Math.sin(angle) * this.speed);
 
-                // ตรวจสอบทิศทางเพื่อเลือกแถวที่เหมาะสมจาก spritesheet
                 if (Math.abs(dx) > Math.abs(dy)) {
                     this.direction = dx > 0 ? 1 : 3;
                 } else {
@@ -152,7 +151,7 @@
             }
 
             animate() {
-                if (frameCount % 5 === 0) { 
+                if (frameCount % 5 === 0) {
                     this.frameIndex = (this.frameIndex + 1) % this.framesX;
                 }
 
@@ -190,13 +189,13 @@
             }
         }
 
-        // ยิงกระสุน
+        // ยิงกระสุนของผู้เล่น
         function shootBullet() {
             let bullet = new Bullet(ship.x + 20, ship.y + 15);
             bullets.push(bullet);
         }
 
-        // อัปเดตการเคลื่อนที่ของกระสุน
+        // อัปเดตการเคลื่อนที่ของกระสุนของผู้เล่น
         function updateBullets() {
             for (let i = bullets.length - 1; i >= 0; i--) {
                 bullets[i].update();
@@ -326,9 +325,8 @@
             }
         }
 
-        // แสดงหัวใจในมุมซ้ายบนของหน้าจอ
+        // ฟังก์ชันแสดงหัวใจที่มุมซ้ายบนของหน้าจอ
         function drawHealth() {
-            // กำหนดขนาดและระยะห่างของหัวใจ
             const heartWidth = 30;
             const heartHeight = 30;
             const spacing = 10;
@@ -353,7 +351,7 @@
 
             for (let enemy of enemies) {
                 if (ship.collidesWith(enemy)) {
-                    playerHealth--; 
+                    playerHealth--;
                     invincible = true;
                     setTimeout(() => {
                         invincible = false;
@@ -378,6 +376,24 @@
                         location.reload();
                     }
                     break;
+                }
+            }
+        }
+
+        // ฟังก์ชันตรวจจับการชนระหว่างกระสุนของผู้เล่นกับศัตรู
+        function checkBulletEnemyCollisions() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let bullet = bullets[i];
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    let enemy = enemies[j];
+                    // สำหรับศัตรูที่เป็น Dragon ให้ใช้ enemy.sprite หากมี
+                    let enemySprite = enemy.sprite ? enemy.sprite : enemy;
+                    if (bullet.sprite.collidesWith(enemySprite)) {
+                        // เมื่อกระสุนชนศัตรู ให้ลบศัตรูและกระสุนออกจากเกม
+                        enemies.splice(j, 1);
+                        bullets.splice(i, 1);
+                        break;
+                    }
                 }
             }
         }
@@ -412,6 +428,9 @@
 
             updateBullets();
             updateEnemyBullets();
+
+            // ตรวจจับการชนระหว่างกระสุนและศัตรู
+            checkBulletEnemyCollisions();
 
             for (let enemy of enemies) {
                 enemy.updateBehavior();
