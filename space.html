@@ -1,6 +1,5 @@
 <!DOCTYPE HTML>
 <html lang="en-US">
-
 <head>
     <meta charset="UTF-8">
     <title>space</title>
@@ -19,7 +18,6 @@
             align-items: center;
             background-color: black;
         }
-
         /* ✅ คอนเทนเนอร์ของเกม */
         #game-container {
             position: relative;
@@ -27,14 +25,12 @@
             height: 720px;
             overflow: hidden;
         }
-
         /* ✅ ให้ Canvas อยู่บนพื้นหลัง */
         canvas {
             position: absolute;
             top: 0;
             left: 0;
         }
-
         #start-btn {
             position: absolute;
             top: 50%;
@@ -47,18 +43,14 @@
             border: none;
             cursor: pointer;
         }
-
         #start-btn:hover {
             background-color: #005f73;
         }
     </style>
 </head>
-
 <body>
-
     <div id="game-container"></div>
     <button id="start-btn">Start Game</button>
-
     <script type="text/javascript">
         var ship;
         var game;
@@ -89,11 +81,12 @@
         // เพิ่มตัวแปรสำหรับเก็บ medkit
         var medkits = [];
 
-        //var deathSound = new Audio("sound/injured-sound.mp3");
+        // เพิ่มตัวแปรสำหรับ Score
+        var score = 0;
 
         // ตรวจสอบเมื่อมีการคลิกปุ่ม
         document.getElementById('start-btn').addEventListener('click', function () {
-            console.log('Start Game button clicked'); // เช็คว่าเหตุการณ์ถูกเรียก
+            console.log('Start Game button clicked');
             playMusic(); // เริ่มเพลง
             init(); // เริ่มเกม
         });
@@ -162,7 +155,7 @@
                 this.totalFrames = this.framesX * this.framesY;
                 this.direction = 0;
                 this.hitCount = 0;
-                this.type = 5;
+                this.type = 5;  // มังกรมี type 5
             }
 
             update() {
@@ -175,10 +168,8 @@
                 let dx = ship.x - this.sprite.x;
                 let dy = ship.y - this.sprite.y;
                 let angle = Math.atan2(dy, dx);
-
                 this.sprite.setX(this.sprite.x + Math.cos(angle) * this.speed);
                 this.sprite.setY(this.sprite.y + Math.sin(angle) * this.speed);
-
                 if (Math.abs(dx) > Math.abs(dy)) {
                     this.direction = dx > 0 ? 1 : 3;
                 } else {
@@ -190,10 +181,8 @@
                 if (frameCount % 5 === 0) {
                     this.frameIndex = (this.frameIndex + 1) % this.framesX;
                 }
-
                 let frameX = this.frameIndex * this.frameWidth;
                 let frameY = this.direction * this.frameHeight;
-
                 game.context.drawImage(
                     this.sprite.image,
                     frameX, frameY,
@@ -203,20 +192,20 @@
                 );
             }
 
-            // ฟังก์ชันตรวจจับการชนกับผู้เล่น (แยกจากการตรวจจับของศัตรูอื่น)
+            // ตรวจจับการชนกับผู้เล่น
             checkCollisionWithPlayer() {
-                let distance = distanceBetween(this.sprite, ship); // คำนวณระยะห่างระหว่างมังกรกับผู้เล่น
-
-                if (distance < 50) {  // ตรวจสอบระยะห่างที่ต้องการ (เช่น 50px)
-                    playerHealth = 0;  // ลดเลือดผู้เล่น
-                    invincible = true;  // ทำให้ผู้เล่น invincible เพื่อป้องกันการชนซ้ำ
-                    setTimeout(() => { invincible = false; }, 1000);  // ตั้งเวลา invincible 1 วินาที
+                let distance = distanceBetween(this.sprite, ship);
+                if (distance < 50) {
+                    playerHealth = 0;
+                    invincible = true;
+                    setTimeout(() => { invincible = false; }, 1000);
                     console.log('Dragon collided with player!');
-
-                    // ถ้าเลือดของผู้เล่นหมด
                     if (playerHealth <= 0) {
-                        alert("Game Over!"); // แสดงข้อความ Game Over
-                        location.reload();  // รีเฟรชเกมใหม่
+                        playGameOverSound();
+                        setTimeout(() => {
+                            alert("Game Over!");
+                            location.reload();
+                        }, 500);
                     }
                 }
             }
@@ -233,7 +222,6 @@
 
             update() {
                 this.sprite.update();
-
                 if (this.sprite.x > game.width + this.sprite.width) {
                     let index = bullets.indexOf(this);
                     if (index > -1) {
@@ -243,11 +231,10 @@
             }
         }
 
-        // ยิงกระสุนของผู้เล่น
+        // ยิงกระสุนของผู้เล่น พร้อมเล่นเสียง shoot-sound.mp3
         function shootBullet() {
             let bullet = new Bullet(ship.x + 20, ship.y + 15);
             bullets.push(bullet);
-            // เล่นเสียงยิงกระสุนทันทีเมื่อยิง
             var shootSound = new Audio("sound/shoot-sound.mp3");
             shootSound.currentTime = 0;
             shootSound.play();
@@ -257,7 +244,6 @@
         function updateBullets() {
             for (let i = bullets.length - 1; i >= 0; i--) {
                 bullets[i].update();
-
                 if (bullets[i].sprite.x > game.width - 30) {
                     bullets.splice(i, 1);
                 }
@@ -272,10 +258,8 @@
                 this.sprite.setImgAngle(270);
                 this.sprite.setMoveAngle(270);
             }
-
             update() {
                 this.sprite.update();
-
                 if (this.sprite.x > game.width - this.sprite.width) {
                     let index = enemyBullets.indexOf(this);
                     if (index > -1) {
@@ -290,7 +274,6 @@
             let enemyBottom = enemy.y + enemy.height / 2;
             let playerTop = ship.y - ship.height / 2;
             let playerBottom = ship.y + ship.height / 2;
-
             return (
                 (playerTop >= enemyTop && playerTop <= enemyBottom) ||
                 (playerBottom >= enemyTop && playerBottom <= enemyBottom) ||
@@ -330,13 +313,12 @@
                 e.shootDelay = Math.floor(Math.random() * 100) + 80;
                 e.lastShotFrame = 0;
             }
-
             e.updateBehavior = function () {
                 if (this.type === 1) {
                     this.shrinkAndShake();
                     this.setX(this.x - 2);
                 } else if (this.type === 2) {
-                    this.shrinkAndShake();  // เพิ่มฟังก์ชันสั่นๆ สำหรับประเภท 2
+                    this.shrinkAndShake();
                     enemyShootBullet(this);
                 } else if (this.type === 3) {
                     let dx = ship.x - this.x;
@@ -345,7 +327,6 @@
                     this.setX(this.x + Math.cos(angle) * 2);
                     this.setY(this.y + Math.sin(angle) * 2);
                 }
-
                 if (this.x < -50) {
                     let index = enemies.indexOf(this);
                     if (index > -1) {
@@ -353,37 +334,27 @@
                     }
                 }
             };
-
-            // ฟังก์ชันทำให้ศัตรูขยับสั่นๆ
             e.shrinkAndShake = function () {
-                let shakeX = Math.random() * 4 - 2;  // ขยับในแนว X แบบสุ่ม
-                let shakeY = Math.random() * 4 - 2;  // ขยับในแนว Y แบบสุ่ม
-                this.setX(this.x + shakeX);  // อัปเดตตำแหน่ง X
-                this.setY(this.y + shakeY);  // อัปเดตตำแหน่ง Y
+                let shakeX = Math.random() * 4 - 2;
+                let shakeY = Math.random() * 4 - 2;
+                this.setX(this.x + shakeX);
+                this.setY(this.y + shakeY);
             };
-
             return e;
         }
 
         function spawnEnemies(numEnemies) {
-            let startX = ship.x + 300;
             let minY = 50;
             let maxY = game.height - 50;
-            let xSpacing = 250;
             let ySpacing = 120;
             let maxRows = 4;
-
             for (let i = 0; i < numEnemies; i++) {
                 let col = Math.floor(i / maxRows);
                 let row = i % maxRows;
-
-                // ปรับตำแหน่ง x ให้เกิดในพื้นที่ 40% ขึ้นไปของหน้าจอ
-                let x = Math.random() * (game.width * 0.6) + (game.width * 0.4); // ทำให้เกิดใน 60% ส่วนหน้าจอที่เหลือ
+                let x = Math.random() * (game.width * 0.6) + (game.width * 0.4);
                 let y = minY + row * ySpacing + (Math.random() * 50 - 25);
-
                 let enemyType = Math.floor(Math.random() * 3) + 1;
                 let enemySpeed = enemyType === 1 ? Math.random() * 4 + 1 : enemyType === 2 ? 0 : Math.random() * 5 + 3;
-
                 let enemy = new Enemy(x, y, enemyType, enemySpeed);
                 enemies.push(enemy);
             }
@@ -400,29 +371,34 @@
             }
         }
 
+        // ฟังก์ชันแสดงคะแนน (Score) ใต้หัวใจ
+        function drawScore() {
+            game.context.fillStyle = "white";
+            game.context.font = "20px Arial";
+            // วาด Score ใต้หัวใจ (ตัวอย่าง: y = 50+10 = 60)
+            game.context.fillText("Score: " + score, 10, 60);
+        }
+
         function blinkEffect() {
             if (invincible) {
-                // เริ่มกระพริบเมื่อโดนโจมตี
                 if (blinkCount === 0) {
-                    blinkCount = 5; // จำนวนการกระพริบ
+                    blinkCount = 5;
                     blinkInterval = setInterval(() => {
                         ship.image.src = (ship.image.src.includes("Fly (1)"))
                             ? "player/Fly (2).png"
-                            : "player/Fly (1).png"; // สลับภาพระหว่างกระพริบ
-
+                            : "player/Fly (1).png";
                         blinkCount--;
                         if (blinkCount <= 0) {
-                            clearInterval(blinkInterval); // หยุดการกระพริบ
-                            ship.image.src = "player/Fly (1).png"; // กลับเป็นภาพปกติ
+                            clearInterval(blinkInterval);
+                            ship.image.src = "player/Fly (1).png";
                         }
-                    }, 200); // กระพริบทุก 200ms
+                    }, 200);
                 }
             } else {
-                // ถ้าไม่โดนโจมตีแสดงภาพปกติ
                 if (blinkInterval) {
-                    clearInterval(blinkInterval);  // หยุดการกระพริบทันที
+                    clearInterval(blinkInterval);
                 }
-                ship.image.src = "player/Fly (1).png";  // แสดงภาพปกติ
+                ship.image.src = "player/Fly (1).png";
             }
         }
 
@@ -434,7 +410,6 @@
         }
 
         function playDeathSound() {
-        // สร้าง Audio instance ใหม่ทุกครั้ง
             var sound = new Audio("sound/injured-sound.mp3");
             sound.currentTime = 0;
             sound.play();
@@ -446,200 +421,170 @@
             gameOverSound.play();
         }
 
-        // ฟังก์ชันตรวจจับการชนและการสร้าง damage
+        // ฟังก์ชันตรวจจับการชนและสร้าง damage
         function checkCollisions() {
-    if (invincible) return;
-
-    for (let enemy of enemies) {
-        let distance = distanceBetween(ship, enemy);
-        if (distance < 50) {
-            console.log('Collision detected!');
-            playerHealth--;
-            playDeathSound(); // เล่นเสียงทันทีเมื่อเกิดการชน
-            invincible = true;
-            setTimeout(() => { invincible = false; }, 1000);
-
-            let index = enemies.indexOf(enemy);
-            if (index > -1) {
-                enemies.splice(index, 1);
+            if (invincible) return;
+            for (let enemy of enemies) {
+                let distance = distanceBetween(ship, enemy);
+                if (distance < 50) {
+                    console.log('Collision detected!');
+                    playerHealth--;
+                    playDeathSound();
+                    invincible = true;
+                    setTimeout(() => { invincible = false; }, 1000);
+                    let index = enemies.indexOf(enemy);
+                    if (index > -1) {
+                        enemies.splice(index, 1);
+                    }
+                    let blinkCount = 5;
+                    let blinkInterval = setInterval(() => {
+                        ship.image.src = (ship.image.src.includes("Fly (1)"))
+                            ? "player/Fly (2).png"
+                            : "player/Fly (1).png";
+                        blinkCount--;
+                        if (blinkCount <= 0) clearInterval(blinkInterval);
+                    }, 200);
+                    if (playerHealth <= 0) {
+                        playGameOverSound();
+                        setTimeout(() => {
+                            alert("Game Over!");
+                            location.reload();
+                        }, 500);
+                    }
+                    break;
+                }
             }
-
-            // ตัวอย่างกระพริบของผู้เล่น
-            let blinkCount = 5;
-            let blinkInterval = setInterval(() => {
-                ship.image.src = (ship.image.src.includes("Fly (1)"))
-                    ? "player/Fly (2).png"
-                    : "player/Fly (1).png";
-                blinkCount--;
-                if (blinkCount <= 0) clearInterval(blinkInterval);
-            }, 200);
-
-            if (playerHealth <= 0) {
-            playGameOverSound();
-            setTimeout(() => {
-                alert("Game Over!");
-                location.reload();
-            }, 500);
-}
-            break;
         }
-    }
-}
 
         // ฟังก์ชันตรวจจับการชนระหว่างกระสุนของผู้เล่นกับศัตรู
         function checkBulletEnemyCollisions() {
-    for (let i = bullets.length - 1; i >= 0; i--) {
-        let bullet = bullets[i];
-        for (let j = enemies.length - 1; j >= 0; j--) {
-            let enemy = enemies[j];
-            let enemySprite = enemy.sprite ? enemy.sprite : enemy;
-
-            // คำนวณระยะห่างระหว่างกระสุนและศัตรู
-            let distance = distanceBetween(bullet.sprite, enemySprite);
-
-            // ถ้าระยะห่างน้อยกว่าค่าที่กำหนด (30px) ถือว่าเกิดการชน
-            if (distance <= 30) {
-                if (enemy.type === 5) {
-                    // สำหรับมังกร ให้เพิ่ม hitCount และลบกระสุนออก
-                    enemy.hitCount++;
-                    bullets.splice(i, 1);
-                    
-                    // ถ้ายังไม่โดนครบ 5 นัด ให้ break ออกจากลูป inner (ไม่ลบมังกร)
-                    if (enemy.hitCount < 5) {
-                        break;
-                    } else {
-                        // เมื่อ hitCount ครบ 5 นัด ให้ลบมังกรออก
-                        enemies.splice(j, 1);
-                        // เรียก onEnemyDestroyed() ถ้ามี หรือรีสปอว์ใหม่ (ถ้าต้องการ)
-                        if (medkits.length === 0) {
-                            onEnemyDestroyed();
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let bullet = bullets[i];
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    let enemy = enemies[j];
+                    let enemySprite = enemy.sprite ? enemy.sprite : enemy;
+                    let distance = distanceBetween(bullet.sprite, enemySprite);
+                    if (distance <= 30) {
+                        if (enemy.type === 5) {
+                            enemy.hitCount++;
+                            bullets.splice(i, 1);
+                            if (enemy.hitCount < 5) {
+                                break;
+                            } else {
+                                // เมื่อโดนครบ 5 นัด ให้เพิ่มคะแนน 3 แต้ม และลบมังกรออก
+                                score += 5;
+                                enemies.splice(j, 1);
+                                if (medkits.length === 0) {
+                                    onEnemyDestroyed();
+                                }
+                                setTimeout(() => {
+                                    let enemyType = 3; // มังกร
+                                    let newPos = getRandomPosition();
+                                    let newEnemy = new Enemy(newPos.x, newPos.y, enemyType, Math.random() * 5 + 3);
+                                    enemies.push(newEnemy);
+                                }, 5000);
+                            }
+                        } else {
+                            // สำหรับศัตรูประเภทอื่น เพิ่มคะแนน 1 แต้ม
+                            score += 1;
+                            enemies.splice(j, 1);
+                            bullets.splice(i, 1);
+                            if (medkits.length === 0) {
+                                onEnemyDestroyed();
+                            }
+                            setTimeout(() => {
+                                let enemyType = Math.floor(Math.random() * 3) + 1;
+                                let newPos = getRandomPosition();
+                                let newEnemy = new Enemy(newPos.x, newPos.y, enemyType, Math.random() * 5 + 3);
+                                enemies.push(newEnemy);
+                            }, 5000);
                         }
-                        setTimeout(() => {
-                            let enemyType = 3; // มังกร
-                            let newPos = getRandomPosition();
-                            let newEnemy = new Enemy(newPos.x, newPos.y, enemyType, Math.random() * 5 + 3);
-                            enemies.push(newEnemy);
-                        }, 5000);
+                        break;
                     }
-                } else {
-                    // สำหรับศัตรูประเภทอื่น ให้ลบศัตรูและกระสุนออกทันที
-                    enemies.splice(j, 1);
-                    bullets.splice(i, 1);
-                    if (medkits.length === 0) {
-                        onEnemyDestroyed();
-                    }
-                    setTimeout(() => {
-                        let enemyType = Math.floor(Math.random() * 3) + 1;
-                        let newPos = getRandomPosition();
-                        let newEnemy = new Enemy(newPos.x, newPos.y, enemyType, Math.random() * 5 + 3);
-                        enemies.push(newEnemy);
-                    }, 5000);
                 }
-                // เมื่อเจอกระสุนชนศัตรูแล้ว ให้ออกจากลูป inner
-                break;
             }
         }
-    }
-}
 
         // ฟังก์ชันตรวจจับการชนระหว่างกระสุนศัตรูกับผู้เล่น
         function checkEnemyBulletCollisions() {
-    for (let i = enemyBullets.length - 1; i >= 0; i--) {
-        let bullet = enemyBullets[i];
-        let distance = distanceBetween(bullet.sprite, ship);
-        if (distance < 50) {
-            playerHealth--;
-            playDeathSound(); // เล่นเสียงทันทีเมื่อโดนกระสุนศัตรู
-            invincible = true;
-            setTimeout(() => { invincible = false; }, 1000);
-
-            console.log('Player hit by enemy bullet!');
-            enemyBullets.splice(i, 1);
-
-            if (playerHealth <= 0) {
-            playGameOverSound();
-            setTimeout(() => {
-                alert("Game Over!");
-                location.reload();
-            }, 500);
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                let bullet = enemyBullets[i];
+                let distance = distanceBetween(bullet.sprite, ship);
+                if (distance < 50) {
+                    playerHealth--;
+                    playDeathSound();
+                    invincible = true;
+                    setTimeout(() => { invincible = false; }, 1000);
+                    console.log('Player hit by enemy bullet!');
+                    enemyBullets.splice(i, 1);
+                    if (playerHealth <= 0) {
+                        playGameOverSound();
+                        setTimeout(() => {
+                            alert("Game Over!");
+                            location.reload();
+                        }, 500);
+                    }
+                }
             }
         }
-    }
-}
 
-        // ฟังก์ชันสำหรับสุ่มตำแหน่งใหม่
         function getRandomPosition() {
-            // ให้ตำแหน่งเกิดอยู่ในครึ่งหลังของหน้าจอ (50% หลังขึ้นไป)
-            let spawnX = Math.random() * (game.width / 2) + game.width / 2; // สุ่มจากครึ่งหลังของหน้าจอ
-            let spawnY = Math.random() * game.height;  // สุ่มตำแหน่ง y ในระยะทั้งหมดของหน้าจอ
-
-            // ตรวจสอบไม่ให้ศัตรูเกิดเกินขอบหน้าจอ
+            let spawnX = Math.random() * (game.width / 2) + game.width / 2;
+            let spawnY = Math.random() * game.height;
             spawnX = Math.max(50, Math.min(spawnX, game.width - 50));
             spawnY = Math.max(50, Math.min(spawnY, game.height - 50));
-
-            // พยายามหลีกเลี่ยงการเกิดที่ใกล้เกินไปจากผู้เล่น
-            // ใช้ระยะห่างขั้นต่ำ 200px จากผู้เล่นทั้งในแกน X และ Y
-            while (Math.abs(spawnX - ship.x) < 200 || Math.abs(spawnY - ship.y) < 200) {
-                spawnX = Math.random() * (game.width / 2) + game.width / 2; // สุ่มใหม่
-                spawnY = Math.random() * game.height; // สุ่มใหม่
-            }
-
-            return { x: spawnX, y: spawnY };
-        }
-
-        // สุ่มตำแหน่งของ medkit
-        function spawnMedkit() {
-            let spawnX = Math.random() * (game.width / 2) + game.width / 2; // สุ่มจากครึ่งหลังของหน้าจอ
-            let spawnY = Math.random() * game.height;  // สุ่มตำแหน่ง y ในระยะทั้งหมดของหน้าจอ
-
-            // ตรวจสอบไม่ให้ medkit เกิดทับตำแหน่งผู้เล่น
             while (Math.abs(spawnX - ship.x) < 200 || Math.abs(spawnY - ship.y) < 200) {
                 spawnX = Math.random() * (game.width / 2) + game.width / 2;
                 spawnY = Math.random() * game.height;
             }
-
-            let newMedkit = new Sprite(game, "medkit.png", 50, 50);  // ใช้ medkit ที่เราเตรียม
-            newMedkit.setSpeed(0);  // ตั้งความเร็วเป็น 0
-            newMedkit.setPosition(spawnX, spawnY);  // ตั้งตำแหน่งที่สุ่ม
-            medkits.push(newMedkit);  // เพิ่ม medkit ที่เกิดใหม่เข้าใน array
+            return { x: spawnX, y: spawnY };
         }
 
-        // ฟังก์ชันตรวจจับการชนระหว่าง medkit กับผู้เล่น
+        function spawnMedkit() {
+            let spawnX = Math.random() * (game.width / 2) + game.width / 2;
+            let spawnY = Math.random() * game.height;
+            while (Math.abs(spawnX - ship.x) < 200 || Math.abs(spawnY - ship.y) < 200) {
+                spawnX = Math.random() * (game.width / 2) + game.width / 2;
+                spawnY = Math.random() * game.height;
+            }
+            let newMedkit = new Sprite(game, "medkit.png", 50, 50);
+            newMedkit.setSpeed(0);
+            newMedkit.setPosition(spawnX, spawnY);
+            medkits.push(newMedkit);
+        }
+
         function checkMedkitCollision() {
             for (let i = 0; i < medkits.length; i++) {
                 let medkit = medkits[i];
-                let distance = distanceBetween(medkit, ship); // คำนวณระยะห่างระหว่าง medkit กับผู้เล่น
-
-                if (distance < 50) {  // ถ้าห่างกันน้อยกว่า 50px (ขนาดของ medkit)
-                    if (playerHealth < 3) {  // ถ้าเลือดผู้เล่นยังไม่เต็ม
-                        playerHealth++;  // เพิ่มเลือดให้ผู้เล่น
-                        medkits.splice(i, 1);  // ลบ medkit ออกจากเกม
+                let distance = distanceBetween(medkit, ship);
+                if (distance < 50) {
+                    if (playerHealth < 3) {
+                        playerHealth++;
+                        medkits.splice(i, 1);
                         console.log("Medkit collected, health increased");
                     } else {
                         console.log("Health is full, medkit cannot be collected");
                     }
-                    break;  // หยุดการตรวจจับการชน
+                    break;
                 }
             }
         }
 
-        // ฟังก์ชันที่จะถูกเรียกเมื่อกำจัดศัตรูครบ 10 ตัว
         function onEnemyDestroyed() {
             if (enemies.length % 10 === 0) {
-                spawnMedkit();  // สร้าง medkit ทุกครั้งที่กำจัดศัตรูครบ 10 ตัว
+                spawnMedkit();
             }
         }
 
-        // ฟังก์ชันเริ่มต้นเล่นเพลง
         function playMusic() {
             console.log('Playing music...');
             if (!isMusicPlaying) {
                 backgroundMusic = new Sound('other-assets/sounds/jetpack-joyride-theme.mp3');
-                backgroundMusic.snd.volume = 0.1; // ปรับระดับเสียงเป็น 50% (คุณสามารถปรับค่าเป็น 0-1)
-                backgroundMusic.snd.loop = true; // ตั้งให้เพลงเล่นวนลูป
+                backgroundMusic.snd.volume = 0.1;
+                backgroundMusic.snd.loop = true;
                 backgroundMusic.play();
                 isMusicPlaying = true;
-                document.getElementById('start-btn').style.display = 'none'; // ซ่อนปุ่มเริ่มเกมหลังจากคลิก
+                document.getElementById('start-btn').style.display = 'none';
             }
         }
 
@@ -647,66 +592,43 @@
             console.log('Game initialization...');
             game = new Scene();
             game.setSize(1280, 720);
-
             game.backgroundVideo = document.createElement("video");
             game.backgroundVideo.src = "background-video.mp4";
             game.backgroundVideo.autoplay = true;
             game.backgroundVideo.loop = true;
             game.backgroundVideo.muted = true;
             game.backgroundVideo.play();
-
             document.getElementById("game-container").appendChild(game.canvas);
-
             ship = new Spaceship();
-
             spawnEnemies(20);
-
             game.start();
         }
 
         function update() {
             game.clear();
             game.context.drawImage(game.backgroundVideo, 0, 0, game.width, game.height);
-
-            // ตรวจสอบการชนระหว่างกระสุนของผู้เล่นและศัตรู
-            checkBulletEnemyCollisions(); // ควรตรวจสอบการชนกับกระสุนก่อน
-
-            // ตรวจสอบการชนระหว่างกระสุนศัตรูและผู้เล่น
-            checkEnemyBulletCollisions(); // ตรวจจับการชนของกระสุนศัตรูกับผู้เล่น
-
-            // ตรวจจับการชนระหว่างผู้เล่นและศัตรู (รวมถึงมังกร)
+            checkBulletEnemyCollisions();
+            checkEnemyBulletCollisions();
             checkCollisions();
-
-            // ตรวจสอบการชนระหว่าง medkit กับผู้เล่น
             checkMedkitCollision();
-
-            // อัปเดตการเคลื่อนที่ของผู้เล่น
             ship.checkKeys();
             ship.animate();
             ship.update();
-
-            // อัปเดตการเคลื่อนที่ของกระสุนของผู้เล่นและศัตรู
             updateBullets();
             updateEnemyBullets();
-
-            // อัปเดตการเคลื่อนที่ของศัตรู
             for (let enemy of enemies) {
                 enemy.updateBehavior();
                 enemy.update();
             }
-
-            // วาด medkit
             for (let medkit of medkits) {
-                medkit.update();  // อัปเดตตำแหน่ง medkit
+                medkit.update();
                 game.context.drawImage(medkit.image, medkit.x - medkit.width / 2, medkit.y - medkit.height / 2, medkit.width, medkit.height);
             }
-
-            drawHealth(); // วาดสถานะหัวใจของผู้เล่น
-            // blinkEffect(); // ฟังก์ชันกระพริบเมื่อผู้เล่นโดนโจมตี
-
+            drawHealth();
+            drawScore(); // วาดคะแนน
+            // blinkEffect();
             frameCount++;
         }
     </script>
 </body>
-
 </html>
