@@ -34,13 +34,30 @@
             top: 0;
             left: 0;
         }
+
+        #start-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #008CBA;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #start-btn:hover {
+            background-color: #005f73;
+        }
     </style>
 </head>
 
-<body onload="init()">
+<body>
 
-    <!-- ✅ คอนเทนเนอร์ของเกม -->
     <div id="game-container"></div>
+    <button id="start-btn">Start Game</button>
 
     <script type="text/javascript">
         var ship;
@@ -55,6 +72,8 @@
             "enemy/dragon/frame_3.png",
             "enemy/dragon/frame_4.png"
         ];
+        var backgroundMusic;
+        var isMusicPlaying = false;
 
         // โหลดรูปหัวใจสำหรับแสดงสุขภาพ
         var heartImage = new Image();
@@ -64,6 +83,13 @@
 
         var playerHealth = 3; // ผู้เล่นมีหัวใจ 3 ดวง
         var invincible = false; // สถานะป้องกัน
+
+        // ตรวจสอบเมื่อมีการคลิกปุ่ม
+        document.getElementById('start-btn').addEventListener('click', function () {
+            console.log('Start Game button clicked'); // เช็คว่าเหตุการณ์ถูกเรียก
+            playMusic(); // เริ่มเพลง
+            init(); // เริ่มเกม
+        });
 
         function Spaceship() {
             let flyImages = ["player/Fly (1).png", "player/Fly (2).png"];
@@ -346,22 +372,36 @@
             }
         }
 
-        function checkCollisions() {
-            if (invincible) return;
+        // ฟังก์ชันคำนวณระยะห่างระหว่างสองจุด
+        function distanceBetween(sprite1, sprite2) {
+            let dx = sprite1.x - sprite2.x;
+            let dy = sprite1.y - sprite2.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
 
+        // ฟังก์ชันตรวจจับการชนและการสร้าง damage
+        function checkCollisions() {
+            if (invincible) return; // ไม่ตรวจจับการชนหากผู้เล่นอยู่ในสถานะ invincible
+
+            // ตรวจสอบการชนระหว่างผู้เล่นและศัตรู
             for (let enemy of enemies) {
-                if (ship.collidesWith(enemy)) {
-                    playerHealth--;
+                let distance = distanceBetween(ship, enemy); // คำนวณระยะห่างระหว่างผู้เล่นและศัตรู
+                console.log(enemies);
+
+                if (distance < 50) { // ระยะห่างที่กำหนด (50px) คือระยะที่ชนกัน
+                    console.log('Collision detected!'); // แสดงในคอนโซลว่าเกิดการชน
+                    playerHealth--; // ลดเลือดผู้เล่น
                     invincible = true;
                     setTimeout(() => {
                         invincible = false;
-                    }, 1000);
+                    }, 1000); // invincible ประมาณ 1 วินาที
 
                     let index = enemies.indexOf(enemy);
                     if (index > -1) {
-                        enemies.splice(index, 1);
+                        enemies.splice(index, 1); // ลบศัตรูที่ชนกับผู้เล่น
                     }
 
+                    // กำหนดการกระพริบของผู้เล่นเมื่อโดนชน
                     let blinkCount = 5;
                     let blinkInterval = setInterval(() => {
                         ship.image.src = (ship.image.src.includes("Fly (1)"))
@@ -373,9 +413,9 @@
 
                     if (playerHealth <= 0) {
                         alert("Game Over!");
-                        location.reload();
+                        location.reload(); // รีเฟรชเกมใหม่
                     }
-                    break;
+                    break; // หยุดการตรวจสอบการชนกับศัตรูตัวอื่น
                 }
             }
         }
@@ -386,19 +426,52 @@
                 let bullet = bullets[i];
                 for (let j = enemies.length - 1; j >= 0; j--) {
                     let enemy = enemies[j];
-                    // สำหรับศัตรูที่เป็น Dragon ให้ใช้ enemy.sprite หากมี
+                    // ตรวจสอบการชนระหว่างกระสุนของผู้เล่นและศัตรู
                     let enemySprite = enemy.sprite ? enemy.sprite : enemy;
                     if (bullet.sprite.collidesWith(enemySprite)) {
                         // เมื่อกระสุนชนศัตรู ให้ลบศัตรูและกระสุนออกจากเกม
-                        enemies.splice(j, 1);
-                        bullets.splice(i, 1);
-                        break;
+                        enemies.splice(j, 1); // ลบศัตรู
+                        bullets.splice(i, 1); // ลบกระสุน
+                        break; // หยุดการตรวจสอบการชนกับกระสุนตัวอื่น
                     }
                 }
             }
         }
 
+
+        // ฟังก์ชันตรวจจับการชนระหว่างกระสุนของผู้เล่นกับศัตรู
+        function checkBulletEnemyCollisions() {
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let bullet = bullets[i];
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    let enemy = enemies[j];
+                    // ตรวจสอบการชนระหว่างกระสุนของผู้เล่นและศัตรู (รวมถึงมังกร)
+                    let enemySprite = enemy.sprite ? enemy.sprite : enemy;
+                    if (bullet.sprite.collidesWith(enemySprite)) {
+                        // เมื่อกระสุนชนศัตรู ให้ลบศัตรูและกระสุนออกจากเกม
+                        enemies.splice(j, 1); // ลบศัตรู
+                        bullets.splice(i, 1); // ลบกระสุน
+                        break; // หยุดการตรวจสอบการชนกับกระสุนตัวอื่น
+                    }
+                }
+            }
+        }
+
+        // ฟังก์ชันเริ่มต้นเล่นเพลง
+        function playMusic() {
+            console.log('Playing music...');
+            if (!isMusicPlaying) {
+                backgroundMusic = new Sound('other-assets/sounds/jetpack-joyride-theme.mp3');
+                backgroundMusic.snd.volume = 0.1; // ปรับระดับเสียงเป็น 50% (คุณสามารถปรับค่าเป็น 0-1)
+                backgroundMusic.snd.loop = true; // ตั้งให้เพลงเล่นวนลูป
+                backgroundMusic.play();
+                isMusicPlaying = true;
+                document.getElementById('start-btn').style.display = 'none'; // ซ่อนปุ่มเริ่มเกมหลังจากคลิก
+            }
+        }
+
         function init() {
+            console.log('Game initialization...');
             game = new Scene();
             game.setSize(1280, 720);
 
@@ -422,28 +495,33 @@
             game.clear();
             game.context.drawImage(game.backgroundVideo, 0, 0, game.width, game.height);
 
+            // ตรวจสอบการชนระหว่างกระสุนของผู้เล่นและศัตรู
+            checkBulletEnemyCollisions(); // ควรตรวจสอบการชนกับกระสุนก่อน
+
+            // ตรวจจับการชนระหว่างผู้เล่นและศัตรู (รวมถึงมังกร)
+            checkCollisions();
+
+            // อัปเดตการเคลื่อนที่ของผู้เล่น
             ship.checkKeys();
             ship.animate();
             ship.update();
 
+            // อัปเดตการเคลื่อนที่ของกระสุนของผู้เล่นและศัตรู
             updateBullets();
             updateEnemyBullets();
 
-            // ตรวจจับการชนระหว่างกระสุนและศัตรู
-            checkBulletEnemyCollisions();
-
+            // อัปเดตการเคลื่อนที่ของศัตรู
             for (let enemy of enemies) {
                 enemy.updateBehavior();
                 enemy.update();
             }
-            checkCollisions();
-            drawHealth();
-            blinkEffect();
+
+            drawHealth(); // วาดสถานะหัวใจของผู้เล่น
+            blinkEffect(); // ฟังก์ชันกระพริบเมื่อผู้เล่นโดนโจมตี
 
             frameCount++;
         }
     </script>
-
 </body>
 
 </html>
