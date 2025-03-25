@@ -642,17 +642,24 @@
 
         // ฟังก์ชัน spawn medkit
         function spawnMedkit() {
-            let spawnX = Math.random() * (game.width / 2) + game.width / 2;
-            let spawnY = Math.random() * game.height;
-            while (Math.abs(spawnX - ship.x) < 200 || Math.abs(spawnY - ship.y) < 200) {
-                spawnX = Math.random() * (game.width / 2) + game.width / 2;
-                spawnY = Math.random() * game.height;
+            // สุ่มตำแหน่งที่ใกล้เคียงกับผู้เล่น
+            let spawnX = Math.random() * 300 + ship.x - 150; // ทำให้ตำแหน่ง X ใกล้กับตำแหน่งของผู้เล่น
+            let spawnY = Math.random() * 300 + ship.y - 150; // ทำให้ตำแหน่ง Y ใกล้กับตำแหน่งของผู้เล่น
+
+            // ตรวจสอบไม่ให้ medkit เกิดทับตำแหน่งผู้เล่น และอยู่ภายในขอบเขตของจอ
+            while (Math.abs(spawnX - ship.x) < 50 || Math.abs(spawnY - ship.y) < 50 ||
+                spawnX < 50 || spawnX > game.width - 50 || spawnY < 50 || spawnY > game.height - 50) {
+                spawnX = Math.random() * 300 + ship.x - 150;
+                spawnY = Math.random() * 300 + ship.y - 150;
             }
+
+            // สร้าง medkit ที่ตำแหน่งที่สุ่ม
             let newMedkit = new Sprite(game, "medkit.png", 50, 50);
-            newMedkit.setSpeed(0);
-            newMedkit.setPosition(spawnX, spawnY);
-            medkits.push(newMedkit);
+            newMedkit.setSpeed(0);  // ตั้งความเร็วเป็น 0
+            newMedkit.setPosition(spawnX, spawnY);  // ตั้งตำแหน่งที่สุ่ม
+            medkits.push(newMedkit);  // เพิ่ม medkit ลงใน array
         }
+
 
         // ฟังก์ชัน spawn powerup (lighting.png) ให้รับตำแหน่ง (x, y) จาก Dragon ที่ตาย
         function spawnPowerup(x, y) {
@@ -664,7 +671,10 @@
 
         // เมื่อศัตรูถูกทำลาย (เช็ค medkit)
         function onEnemyDestroyed() {
-            if (enemies.length % 10 === 0) {
+            if (playerHealth < 2) {
+                spawnMedkit();
+                spawnMedkit();
+            } else if (playerHealth < 3) {
                 spawnMedkit();
             }
         }
