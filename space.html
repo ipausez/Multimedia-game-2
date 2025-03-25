@@ -312,12 +312,12 @@
             // เส้นที่ 2: เฉียงลง 30 องศา (จาก 90 บวก 30 = 120)
             if (backShootActive) {
                 let bulletUpper = new Bullet(ship.x + 20, ship.y + 15);
-                bulletUpper.sprite.setImgAngle(180);
+                bulletUpper.sprite.setImgAngle(160);
                 bulletUpper.sprite.setMoveAngle(60);
                 bullets.push(bulletUpper);
 
                 let bulletLower = new Bullet(ship.x + 20, ship.y + 15);
-                bulletLower.sprite.setImgAngle(180);
+                bulletLower.sprite.setImgAngle(200);
                 bulletLower.sprite.setMoveAngle(120);
                 bullets.push(bulletLower);
             }
@@ -563,7 +563,7 @@
                             if (enemy.hitCount < 5) {
                                 break;
                             } else {
-                                score += 5;        // ได้คะแนน 5
+                                score += 10;        // ได้คะแนน 5
                                 dragonKillCount++; // เพิ่มตัวนับ dragonKillCount
 
                                 // เก็บตำแหน่งของ Dragon ที่ตายก่อนลบออก
