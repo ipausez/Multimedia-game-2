@@ -1,14 +1,12 @@
 <!DOCTYPE HTML>
 <html lang="en-US">
-
 <head>
     <meta charset="UTF-8">
     <title>space</title>
     <script type="text/javascript" src="simpleGame.js"></script>
     <style>
         /* ปรับขนาดให้เต็มจอ */
-        body,
-        html {
+        body, html {
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -19,7 +17,6 @@
             align-items: center;
             background-color: black;
         }
-
         /* คอนเทนเนอร์ของเกม */
         #game-container {
             position: relative;
@@ -27,14 +24,12 @@
             height: 720px;
             overflow: hidden;
         }
-
         /* ให้ Canvas อยู่บนพื้นหลัง */
         canvas {
             position: absolute;
             top: 0;
             left: 0;
         }
-
         #start-btn {
             position: absolute;
             top: 50%;
@@ -47,11 +42,9 @@
             border: none;
             cursor: pointer;
         }
-
         #start-btn:hover {
             background-color: #005f73;
         }
-
         /* สไตล์สำหรับ Title และคำอธิบาย */
         #game-title {
             position: absolute;
@@ -67,19 +60,16 @@
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
         }
-
         #game-title h1 {
             font-size: 60px;
             margin: 0;
         }
-
         #game-title p {
             font-size: 20px;
             margin-top: 10px;
         }
     </style>
 </head>
-
 <body>
     <div id="game-title">
         <h1>Earth Defender</h1>
@@ -121,7 +111,7 @@
         // ตัวแปรสำหรับเก็บ Medkit
         var medkits = [];
 
-        // ตัวแปรสำหรับเก็บ Score และ High Score
+        // ตัวแปรสำหรับเก็บ Score
         var score = 0;
 
         // ตัวแปรสำหรับนับจำนวน Dragon ที่ถูกฆ่า
@@ -152,7 +142,6 @@
             init();      // เริ่มเกม
             document.getElementById("game-title").style.display = "none"; // ซ่อน title
         });
-
 
         /*****************************************/
         /* 2) สร้างคลาสและฟังก์ชันที่เกี่ยวข้องกับเกม */
@@ -318,13 +307,19 @@
             shootSound.volume = 0.2;
             shootSound.play();
 
-            // ถ้า buff back-shoot active ให้ยิงกระสุนจากด้านหลังของ player ด้วย
+            // ถ้า buff back-shoot active ให้ยิงกระสุนเพิ่มอีก 2 เส้นในแนวหน้า:
+            // เส้นที่ 1: เฉียงขึ้น 30 องศา (จาก 90 ลด 30 = 60)
+            // เส้นที่ 2: เฉียงลง 30 องศา (จาก 90 บวก 30 = 120)
             if (backShootActive) {
-                let backBullet = new Bullet(ship.x - 20, ship.y - 15);
-                // ปรับมุมการเคลื่อนที่ของ backBullet ให้ตรงข้ามกับด้านหน้าของ player
-                backBullet.sprite.setImgAngle(0);      // ปรับภาพถ้าจำเป็น
-                backBullet.sprite.setMoveAngle(270);     // ยิงออกด้านหลัง
-                bullets.push(backBullet);
+                let bulletUpper = new Bullet(ship.x + 20, ship.y + 15);
+                bulletUpper.sprite.setImgAngle(180);
+                bulletUpper.sprite.setMoveAngle(60);
+                bullets.push(bulletUpper);
+
+                let bulletLower = new Bullet(ship.x + 20, ship.y + 15);
+                bulletLower.sprite.setImgAngle(180);
+                bulletLower.sprite.setMoveAngle(120);
+                bullets.push(bulletLower);
             }
         }
 
@@ -486,15 +481,12 @@
             }
         }
 
-        // ฟังก์ชันวาดคะแนน (Score) และ High Score
+        // ฟังก์ชันวาดคะแนน (Score)
         function drawScore() {
-            // อัปเดต highScore หาก score ปัจจุบันมากกว่า highScore
-            
             game.context.fillStyle = "white";
             game.context.font = "20px Arial";
             // วาด Score ที่ตำแหน่งด้านซ้ายบน
             game.context.fillText("Score: " + score, 10, 60);
-            // วาด High Score ข้างล่าง Score
         }
 
         // เล่นเสียงตอนโดนโจมตี
@@ -687,7 +679,7 @@
             powerups.push(newPowerup);
         }
 
-        // ฟังก์ชัน spawn back-shoot powerup ที่ตำแหน่งกลางจอ
+        // ฟังก์ชัน spawn back-shoot powerup ที่ตำแหน่งกลางจอ (ใช้รูป back-shoot.png)
         function spawnBackShootPowerup() {
             backShootPowerup = new Sprite(game, "back-shoot.png", 50, 50);
             backShootPowerup.setSpeed(0);
@@ -837,5 +829,4 @@
         }
     </script>
 </body>
-
 </html>
