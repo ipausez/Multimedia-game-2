@@ -6,7 +6,7 @@
     <title>space</title>
     <script type="text/javascript" src="simpleGame.js"></script>
     <style>
-        /* ✅ ปรับขนาดให้เต็มจอ */
+        /* ปรับขนาดให้เต็มจอ */
         body,
         html {
             margin: 0;
@@ -20,7 +20,7 @@
             background-color: black;
         }
 
-        /* ✅ คอนเทนเนอร์ของเกม */
+        /* คอนเทนเนอร์ของเกม */
         #game-container {
             position: relative;
             width: 1280px;
@@ -28,7 +28,7 @@
             overflow: hidden;
         }
 
-        /* ✅ ให้ Canvas อยู่บนพื้นหลัง */
+        /* ให้ Canvas อยู่บนพื้นหลัง */
         canvas {
             position: absolute;
             top: 0;
@@ -121,7 +121,7 @@
         // ตัวแปรสำหรับเก็บ Medkit
         var medkits = [];
 
-        // ตัวแปรสำหรับเก็บ Score
+        // ตัวแปรสำหรับเก็บ Score และ High Score
         var score = 0;
 
         // ตัวแปรสำหรับนับจำนวน Dragon ที่ถูกฆ่า
@@ -132,6 +132,11 @@
 
         // ตัวแปรควบคุมความถี่ในการยิงกระสุน (ยิ่งน้อยยิ่งยิงเร็ว)
         var shootInterval = 5;
+
+        // ตัวแปรสำหรับ Back-Shoot Powerup
+        var nextBackShootScore = 100;   // คะแนนที่ต้องถึงเพื่อ spawn back-shoot powerup
+        var backShootPowerup = null;      // ใช้เก็บ sprite ของ back-shoot powerup
+        var backShootActive = false;      // สถานะบัฟ back-shoot
 
         // ฟังก์ชันคำนวณระยะห่างระหว่าง 2 สไปรท์
         function distanceBetween(sprite1, sprite2) {
@@ -303,14 +308,24 @@
             }
         }
 
-        // ยิงกระสุนของผู้เล่น + เล่นเสียง
+        // ฟังก์ชันยิงกระสุนของผู้เล่นและเล่นเสียง
         function shootBullet() {
+            // ยิงกระสุนปกติ (ด้านหน้าของ player)
             let bullet = new Bullet(ship.x + 20, ship.y + 15);
             bullets.push(bullet);
             var shootSound = new Audio("sound/shoot-sound.mp3");
             shootSound.currentTime = 0;
             shootSound.volume = 0.2;
             shootSound.play();
+
+            // ถ้า buff back-shoot active ให้ยิงกระสุนจากด้านหลังของ player ด้วย
+            if (backShootActive) {
+                let backBullet = new Bullet(ship.x - 20, ship.y - 15);
+                // ปรับมุมการเคลื่อนที่ของ backBullet ให้ตรงข้ามกับด้านหน้าของ player
+                backBullet.sprite.setImgAngle(0);      // ปรับภาพถ้าจำเป็น
+                backBullet.sprite.setMoveAngle(270);     // ยิงออกด้านหลัง
+                bullets.push(backBullet);
+            }
         }
 
         // อัปเดตกระสุนผู้เล่น
@@ -357,7 +372,7 @@
             );
         }
 
-        // ศัตรูยิงกระสุน
+        // ฟังก์ชันศัตรูยิงกระสุน
         function enemyShootBullet(enemy) {
             if (isAlignedVertically(enemy) && frameCount - enemy.lastShotFrame > enemy.shootDelay) {
                 let bullet = new EnemyBullet(enemy.x, enemy.y);
@@ -395,7 +410,7 @@
                 e.lastShotFrame = 0;
             }
 
-            // เพิ่มฟังก์ชันสำหรับอัปเดตพฤติกรรม (move / shoot)
+            // ฟังก์ชันสำหรับอัปเดตพฤติกรรม (move / shoot)
             e.updateBehavior = function () {
                 if (this.type === 1) {
                     this.shrinkAndShake();
@@ -404,7 +419,7 @@
                     this.shrinkAndShake();
                     enemyShootBullet(this);
                 } else if (this.type === 3) {
-                    // สำหรับ Dragon เราใช้คลาส Dragon อยู่แล้ว
+                    // สำหรับ Dragon ใช้คลาส Dragon อยู่แล้ว
                     let dx = ship.x - this.x;
                     let dy = ship.y - this.y;
                     let angle = Math.atan2(dy, dx);
@@ -460,7 +475,7 @@
         /* 3) ฟังก์ชันแสดง UI (Health, Score) และเอฟเฟกต์ต่าง ๆ */
         /*************************************************/
 
-        // วาดหัวใจ (Health) ที่มุมซ้ายบน
+        // ฟังก์ชันวาดหัวใจ (Health) ที่มุมซ้ายบน
         function drawHealth() {
             const heartWidth = 30;
             const heartHeight = 30;
@@ -471,11 +486,15 @@
             }
         }
 
-        // วาดคะแนน (Score) ใต้หัวใจ
+        // ฟังก์ชันวาดคะแนน (Score) และ High Score
         function drawScore() {
+            // อัปเดต highScore หาก score ปัจจุบันมากกว่า highScore
+            
             game.context.fillStyle = "white";
             game.context.font = "20px Arial";
+            // วาด Score ที่ตำแหน่งด้านซ้ายบน
             game.context.fillText("Score: " + score, 10, 60);
+            // วาด High Score ข้างล่าง Score
         }
 
         // เล่นเสียงตอนโดนโจมตี
@@ -643,8 +662,8 @@
         // ฟังก์ชัน spawn medkit
         function spawnMedkit() {
             // สุ่มตำแหน่งที่ใกล้เคียงกับผู้เล่น
-            let spawnX = Math.random() * 300 + ship.x - 150; // ทำให้ตำแหน่ง X ใกล้กับตำแหน่งของผู้เล่น
-            let spawnY = Math.random() * 300 + ship.y - 150; // ทำให้ตำแหน่ง Y ใกล้กับตำแหน่งของผู้เล่น
+            let spawnX = Math.random() * 300 + ship.x - 150;
+            let spawnY = Math.random() * 300 + ship.y - 150;
 
             // ตรวจสอบไม่ให้ medkit เกิดทับตำแหน่งผู้เล่น และอยู่ภายในขอบเขตของจอ
             while (Math.abs(spawnX - ship.x) < 50 || Math.abs(spawnY - ship.y) < 50 ||
@@ -655,11 +674,10 @@
 
             // สร้าง medkit ที่ตำแหน่งที่สุ่ม
             let newMedkit = new Sprite(game, "medkit.png", 50, 50);
-            newMedkit.setSpeed(0);  // ตั้งความเร็วเป็น 0
-            newMedkit.setPosition(spawnX, spawnY);  // ตั้งตำแหน่งที่สุ่ม
-            medkits.push(newMedkit);  // เพิ่ม medkit ลงใน array
+            newMedkit.setSpeed(0);
+            newMedkit.setPosition(spawnX, spawnY);
+            medkits.push(newMedkit);
         }
-
 
         // ฟังก์ชัน spawn powerup (lighting.png) ให้รับตำแหน่ง (x, y) จาก Dragon ที่ตาย
         function spawnPowerup(x, y) {
@@ -667,6 +685,13 @@
             newPowerup.setSpeed(0);
             newPowerup.setPosition(x, y);
             powerups.push(newPowerup);
+        }
+
+        // ฟังก์ชัน spawn back-shoot powerup ที่ตำแหน่งกลางจอ
+        function spawnBackShootPowerup() {
+            backShootPowerup = new Sprite(game, "back-shoot.png", 50, 50);
+            backShootPowerup.setSpeed(0);
+            backShootPowerup.setPosition(game.width / 2, game.height / 2);
         }
 
         // เมื่อศัตรูถูกทำลาย (เช็ค medkit)
@@ -717,6 +742,28 @@
             }
         }
 
+        // ฟังก์ชันตรวจจับการชนระหว่าง player กับ back-shoot powerup
+        function checkBackShootCollision() {
+            if (backShootPowerup) {
+                let distance = distanceBetween(backShootPowerup, ship);
+                if (distance < 50) {
+                    // เมื่อเก็บ powerup ให้ลบออกและเปิดใช้งาน buff back-shoot
+                    backShootPowerup = null;
+                    activateBackShootBuff();
+                }
+            }
+        }
+
+        // ฟังก์ชันเปิดใช้งานบัฟ back-shoot เป็นเวลา 10 วินาที
+        function activateBackShootBuff() {
+            backShootActive = true;
+            console.log("Back-shoot buff activated!");
+            setTimeout(() => {
+                backShootActive = false;
+                console.log("Back-shoot buff ended.");
+            }, 10000);
+        }
+
         /***************************************/
         /* 4) ฟังก์ชันเพลงประกอบและการเริ่มเกม */
         /***************************************/
@@ -758,11 +805,14 @@
             checkCollisions();
             checkMedkitCollision();
             checkPowerupCollision();
+            checkBackShootCollision();
+
             ship.checkKeys();
             ship.animate();
             ship.update();
             updateBullets();
             updateEnemyBullets();
+
             for (let enemy of enemies) {
                 enemy.updateBehavior();
                 enemy.update();
@@ -771,9 +821,19 @@
                 medkit.update();
                 game.context.drawImage(medkit.image, medkit.x - medkit.width / 2, medkit.y - medkit.height / 2, medkit.width, medkit.height);
             }
+            // ถ้ามี back-shoot powerup ให้วาดออกมาที่ตำแหน่งของมัน
+            if (backShootPowerup) {
+                game.context.drawImage(backShootPowerup.image, backShootPowerup.x - backShootPowerup.width / 2, backShootPowerup.y - backShootPowerup.height / 2, backShootPowerup.width, backShootPowerup.height);
+            }
             drawHealth();
             drawScore();
             frameCount++;
+
+            // ตรวจสอบคะแนนเพื่อ spawn back-shoot powerup (spawn ครั้งเดียวสำหรับแต่ละ 100 คะแนน)
+            if (score >= nextBackShootScore && backShootPowerup === null) {
+                spawnBackShootPowerup();
+                nextBackShootScore += 100;
+            }
         }
     </script>
 </body>
