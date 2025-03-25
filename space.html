@@ -1,5 +1,6 @@
 <!DOCTYPE HTML>
 <html lang="en-US">
+
 <head>
     <meta charset="UTF-8">
     <title>space</title>
@@ -18,6 +19,7 @@
             align-items: center;
             background-color: black;
         }
+
         /* ✅ คอนเทนเนอร์ของเกม */
         #game-container {
             position: relative;
@@ -25,12 +27,14 @@
             height: 720px;
             overflow: hidden;
         }
+
         /* ✅ ให้ Canvas อยู่บนพื้นหลัง */
         canvas {
             position: absolute;
             top: 0;
             left: 0;
         }
+
         #start-btn {
             position: absolute;
             top: 50%;
@@ -43,11 +47,13 @@
             border: none;
             cursor: pointer;
         }
+
         #start-btn:hover {
             background-color: #005f73;
         }
     </style>
 </head>
+
 <body>
     <div id="game-container"></div>
     <button id="start-btn">Start Game</button>
@@ -271,6 +277,7 @@
             bullets.push(bullet);
             var shootSound = new Audio("sound/shoot-sound.mp3");
             shootSound.currentTime = 0;
+            shootSound.volume = 0.2;
             shootSound.play();
         }
 
@@ -725,4 +732,5 @@
         }
     </script>
 </body>
+
 </html>
