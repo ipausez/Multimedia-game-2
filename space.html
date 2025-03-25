@@ -1,12 +1,14 @@
 <!DOCTYPE HTML>
 <html lang="en-US">
+
 <head>
     <meta charset="UTF-8">
     <title>space</title>
     <script type="text/javascript" src="simpleGame.js"></script>
     <style>
         /* ปรับขนาดให้เต็มจอ */
-        body, html {
+        body,
+        html {
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -17,6 +19,7 @@
             align-items: center;
             background-color: black;
         }
+
         /* คอนเทนเนอร์ของเกม */
         #game-container {
             position: relative;
@@ -24,12 +27,14 @@
             height: 720px;
             overflow: hidden;
         }
+
         /* ให้ Canvas อยู่บนพื้นหลัง */
         canvas {
             position: absolute;
             top: 0;
             left: 0;
         }
+
         #start-btn {
             position: absolute;
             top: 50%;
@@ -42,9 +47,11 @@
             border: none;
             cursor: pointer;
         }
+
         #start-btn:hover {
             background-color: #005f73;
         }
+
         /* สไตล์สำหรับ Title และคำอธิบาย */
         #game-title {
             position: absolute;
@@ -60,16 +67,19 @@
             border-radius: 10px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
         }
+
         #game-title h1 {
             font-size: 60px;
             margin: 0;
         }
+
         #game-title p {
             font-size: 20px;
             margin-top: 10px;
         }
     </style>
 </head>
+
 <body>
     <div id="game-title">
         <h1>Earth Defender</h1>
@@ -128,6 +138,11 @@
         var backShootPowerup = null;      // ใช้เก็บ sprite ของ back-shoot powerup
         var backShootActive = false;      // สถานะบัฟ back-shoot
 
+        // ตัวแปรสำหรับ speed up (เป็น sprite)
+        var speedUpItems = [];
+        var nextSpeedUpScore = 200;   // คะแนนที่ต้องถึงเพื่อ spawn speed up
+        var speedUpActive = false;      // สถานะบัฟ speed up
+
         // ฟังก์ชันคำนวณระยะห่างระหว่าง 2 สไปรท์
         function distanceBetween(sprite1, sprite2) {
             let dx = sprite1.x - sprite2.x;
@@ -165,10 +180,18 @@
 
             // ตรวจจับการกดคีย์ เพื่อบังคับยานและยิง
             tShip.checkKeys = function () {
-                if (keysDown[65]) this.setX(this.x - 6);  // A
-                if (keysDown[68]) this.setX(this.x + 6);  // D
-                if (keysDown[87]) this.setY(this.y - 6);  // W
-                if (keysDown[83]) this.setY(this.y + 6);  // S
+                if (speedUpActive === true) {
+                    if (keysDown[65]) this.setX(this.x - 10);  // A
+                    if (keysDown[68]) this.setX(this.x + 10);  // D
+                    if (keysDown[87]) this.setY(this.y - 10);  // W
+                    if (keysDown[83]) this.setY(this.y + 10);  // S
+                } else {
+                    if (keysDown[65]) this.setX(this.x - 6);  // A
+                    if (keysDown[68]) this.setX(this.x + 6);  // D
+                    if (keysDown[87]) this.setY(this.y - 6);  // W
+                    if (keysDown[83]) this.setY(this.y + 6);  // S
+                }
+
 
                 // ยิงกระสุน
                 if (keysDown[32]) { // spacebar
@@ -287,8 +310,16 @@
 
             update() {
                 this.sprite.update();
-                // ถ้ากระสุนเลยขอบจอ ให้ลบออก
-                if (this.sprite.x > game.width + this.sprite.width) {
+                // ถ้ากระสุนเลยขอบจอในแกน x ให้ลบออก
+                if (this.sprite.x > game.width + this.sprite.width || this.sprite.x < -this.sprite.width) {
+                    let index = bullets.indexOf(this);
+                    if (index > -1) {
+                        bullets.splice(index, 1);
+                    }
+                }
+
+                // ถ้ากระสุนเลยขอบจอในแกน y ให้ลบออกก่อนที่มันจะออกจากขอบ
+                if (this.sprite.y > game.height + this.sprite.height || this.sprite.y < -this.sprite.height) {
                     let index = bullets.indexOf(this);
                     if (index > -1) {
                         bullets.splice(index, 1);
@@ -467,8 +498,38 @@
         }
 
         /*************************************************/
-        /* 3) ฟังก์ชันแสดง UI (Health, Score) และเอฟเฟกต์ต่าง ๆ */
+        /* 3) ฟังก์ชันแสดง UI (Health, Score) และไอเทมเอฟเฟกต์ต่าง ๆ */
         /*************************************************/
+
+        // ฟังก์ชัน spawn ไอเทม Speed Up ทุกๆ 200 คะแนน
+        function spawnSpeedUpItem() {
+            let spawnX = Math.random() * (game.width - 100) + 50;
+            let spawnY = Math.random() * (game.height - 100) + 50;
+
+            // สร้าง Sprite สำหรับ speedUP และตั้งค่าตำแหน่ง
+            let speedUpItem = new Sprite(game, "speedUP.png", 50, 50);  // ใช้ไฟล์ที่อัปโหลด
+            speedUpItem.setPosition(spawnX, spawnY);
+            speedUpItem.setSpeed(0);
+            speedUpItems.push(speedUpItem);  // เพิ่มเข้าไปในอาเรย์ไอเทม
+            console.log("Speed Up spawned!");
+        }
+
+        // ฟังก์ชันตรวจจับการชนระหว่างผู้เล่นกับไอเทม Speed Up
+        function checkSpeedUpCollision() {
+            for (let i = 0; i < speedUpItems.length; i++) {
+                let item = speedUpItems[i];
+                let distance = distanceBetween(item, ship);
+                if (distance < 50) {
+                    // เมื่อเก็บไอเทมแล้วเพิ่มความเร็วให้กับยาน
+                    speedUpItems.splice(i, 1);  // ลบไอเทมออกจากเกม
+                    console.log("Speed Up collected! Ship speed increased.");
+                    speedUpActive = true;
+                    setTimeout(() => {
+                        speedUpActive = false;
+                    }, 10000);
+                }
+            }
+        }
 
         // ฟังก์ชันวาดหัวใจ (Health) ที่มุมซ้ายบน
         function drawHealth() {
@@ -563,7 +624,7 @@
                             if (enemy.hitCount < 5) {
                                 break;
                             } else {
-                                score += 10;        // ได้คะแนน 5
+                                score += 100;        // ได้คะแนน 5
                                 dragonKillCount++; // เพิ่มตัวนับ dragonKillCount
 
                                 // เก็บตำแหน่งของ Dragon ที่ตายก่อนลบออก
@@ -798,6 +859,7 @@
             checkMedkitCollision();
             checkPowerupCollision();
             checkBackShootCollision();
+            checkSpeedUpCollision();  // ตรวจจับการเก็บไอเทม Speed Up
 
             ship.checkKeys();
             ship.animate();
@@ -817,6 +879,12 @@
             if (backShootPowerup) {
                 game.context.drawImage(backShootPowerup.image, backShootPowerup.x - backShootPowerup.width / 2, backShootPowerup.y - backShootPowerup.height / 2, backShootPowerup.width, backShootPowerup.height);
             }
+
+            // วาดไอเทม Speed Up (จะวาด sprite ของ speedUpItem ที่ตำแหน่งของมัน)
+            for (let item of speedUpItems) {
+                item.update();  // อัปเดต sprite
+                game.context.drawImage(item.image, item.x - item.width / 2, item.y - item.height / 2, item.width, item.height);
+            }
             drawHealth();
             drawScore();
             frameCount++;
@@ -826,7 +894,14 @@
                 spawnBackShootPowerup();
                 nextBackShootScore += 100;
             }
+
+            if (score >= nextSpeedUpScore && speedUpItems.length === 0) {  // ตรวจสอบคะแนนที่ถึง 200, 400, 600 เป็นต้น
+                // สร้างไอเทม Speed Up เมื่อคะแนนถึง 200, 400, 600
+                spawnSpeedUpItem();
+                nextSpeedUpScore += 200;
+            }
         }
     </script>
 </body>
+
 </html>
